@@ -70,6 +70,13 @@ public class MainActivity extends AppCompatActivity {
         webView = findViewById(R.id.webview);
         webView.setBackgroundColor(Color.parseColor("#0b0f19"));
 
+        // PERBAIKAN 1: Menambahkan jarak atas 20dp agar judul & tombol tidak tertutup jam/status bar HP
+        int topPadding = (int) (20 * getResources().getDisplayMetrics().density);
+        webView.setPadding(0, topPadding, 0, 0);
+
+        // Aktifkan akselerasi hardware untuk performa game yang halus
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
         webSettings.setDomStorageEnabled(true);
@@ -93,11 +100,12 @@ public class MainActivity extends AppCompatActivity {
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
                 
-                if (url.contains("unogame17.blogspot.com") || url.startsWith(GAME_URL)) {
-                    return false;
+                // PERBAIKAN 2: Mengizinkan domain blogspot (.com, .co.id, dll) dan semua koneksi web internal
+                if (url.startsWith("http://") || url.startsWith("https://")) {
+                    return false; // Biarkan WebView memuat halaman secara normal
                 }
                 
-                return true;
+                return false;
             }
 
             @Override
@@ -114,7 +122,9 @@ public class MainActivity extends AppCompatActivity {
                 if (progressBar != null) {
                     progressBar.setVisibility(View.GONE);
                 }
-                webView.setVisibility(View.VISIBLE);
+                if (webView != null) {
+                    webView.setVisibility(View.VISIBLE);
+                }
             }
 
             @Override
