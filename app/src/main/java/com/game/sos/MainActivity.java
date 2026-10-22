@@ -10,6 +10,7 @@ import android.net.NetworkCapabilities;
 import android.net.NetworkRequest;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebChromeClient;
@@ -19,6 +20,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
@@ -60,6 +62,7 @@ public class MainActivity extends AppCompatActivity {
         progressBar = findViewById(R.id.progressBar);
         connectivityManager = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 
+        // Inisialisasi AdMob dan Muat Iklan Pertama Kali
         MobileAds.initialize(this, initializationStatus -> loadInterstitialAd());
 
         adView = findViewById(R.id.adView);
@@ -70,11 +73,9 @@ public class MainActivity extends AppCompatActivity {
         webView = findViewById(R.id.webview);
         webView.setBackgroundColor(Color.parseColor("#0b0f19"));
 
-        // PERBAIKAN 1: Menambahkan jarak atas 20dp agar judul & tombol tidak tertutup jam/status bar HP
         int topPadding = (int) (20 * getResources().getDisplayMetrics().density);
         webView.setPadding(0, topPadding, 0, 0);
 
-        // Aktifkan akselerasi hardware untuk performa game yang halus
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
         WebSettings webSettings = webView.getSettings();
@@ -99,12 +100,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                
-                // PERBAIKAN 2: Mengizinkan domain blogspot (.com, .co.id, dll) dan semua koneksi web internal
                 if (url.startsWith("http://") || url.startsWith("https://")) {
-                    return false; // Biarkan WebView memuat halaman secara normal
+                    return false;
                 }
-                
                 return false;
             }
 
@@ -190,6 +188,60 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void loadInterstitialAd() {
+        if (isInterstitialLoading || interstitialAd != null) {
+            return;
+        }
+        isInterstitialLoading = true;
+
+        AdRequest adRequest = new AdRequest.Builder().build();
+        InterstitialAd.load(this, INTERSTITIAL_AD_UNIT_ID, adRequest,
+            new InterstitialAdLoadCallback() {
+                @Override
+                public void onAdLoaded(@NonNull InterstitialAd ad) {
+                    interstitialAd = ad;
+                    isInterstitialLoading = false;
+                    Log.d("AdMob", "Iklan Interstisial berhasil dimuat.");
+                    
+                    interstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
+                        @Override
+                        public void onAdDismissedFullScreenContent() {
+                            interstitialAd = null;
+                            loadInterstitialAd(); // Muat ulang untuk pemanggilan berikutnya
+                        }
+
+                        @Override
+                        public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
+                            interstitialAd = null;
+                            loadInterstitialAd();
+                        }
+                    });
+                }
+
+                @Override
+                public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
+                    interstitialAd = null;
+                    isInterstitialLoading = false;
+                    Log.e("AdMob", "Gagal memuat iklan: " + loadAdError.getMessage());
+                }
+            });
+    }
+
+    @JavascriptInterface
+    public void panggilIklanInterstisial() {
+        runOnUiThread(() -> {
+            if (!isFinishing() && !isDestroyed()) {
+                if (interstitialAd != null) {
+                    interstitialAd.show(MainActivity.this);
+                } else {
+                    // Jika iklan belum siap saat dipanggil, tampilkan pesan dan muat ulang
+                    Toast.makeText(MainActivity.this, "Iklan sedang disiapkan, coba sebentar lagi...", Toast.LENGTH_SHORT).show();
+                    loadInterstitialAd();
+                }
+            }
+        });
+    }
+
     private void showOfflinePage(WebView view) {
         String html = "<html><head><meta name='viewport' content='width=device-width, initial-scale=1.0'>"
                 + "<style>body{display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background-color:#0b0f19;}"
@@ -232,56 +284,6 @@ public class MainActivity extends AppCompatActivity {
                 (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
                  capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
                  capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET));
-    }
-
-    private void loadInterstitialAd() {
-        if (isInterstitialLoading || interstitialAd != null) {
-            return;
-        }
-        isInterstitialLoading = true;
-
-        AdRequest adRequest = new AdRequest.Builder().build();
-        InterstitialAd.load(this, INTERSTITIAL_AD_UNIT_ID, adRequest,
-            new InterstitialAdLoadCallback() {
-                @Override
-                public void onAdLoaded(@NonNull InterstitialAd ad) {
-                    interstitialAd = ad;
-                    isInterstitialLoading = false;
-                    
-                    interstitialAd.setFullScreenContentCallback(new FullScreenContentCallback() {
-                        @Override
-                        public void onAdDismissedFullScreenContent() {
-                            interstitialAd = null;
-                            loadInterstitialAd();
-                        }
-
-                        @Override
-                        public void onAdFailedToShowFullScreenContent(@NonNull AdError adError) {
-                            interstitialAd = null;
-                            loadInterstitialAd();
-                        }
-                    });
-                }
-
-                @Override
-                public void onAdFailedToLoad(@NonNull LoadAdError loadAdError) {
-                    interstitialAd = null;
-                    isInterstitialLoading = false;
-                }
-            });
-    }
-
-    @JavascriptInterface
-    public void panggilIklanInterstisial() {
-        runOnUiThread(() -> {
-            if (!isFinishing() && !isDestroyed()) {
-                if (interstitialAd != null) {
-                    interstitialAd.show(MainActivity.this);
-                } else {
-                    loadInterstitialAd();
-                }
-            }
-        });
     }
 
     @Override
