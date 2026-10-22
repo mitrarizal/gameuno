@@ -12,5 +12,5 @@ dependencyResolutionManagement {
         mavenCentral()
     }
 }
-rootProject.name = "numerasi-app"
+rootProject.name = "com.gameunoapp"
 include(":app")
