@@ -35,6 +35,8 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback;
 
 public class MainActivity extends AppCompatActivity {
 
+    private static final String GAME_URL = "https://unogame17.blogspot.com/";
+
     private WebView webView;
     private AdView adView;
     private InterstitialAd interstitialAd;
@@ -52,9 +54,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. Paksa Window background Android menjadi gelap total #0b0f19
         getWindow().setBackgroundDrawable(new ColorDrawable(Color.parseColor("#0b0f19")));
-
         setContentView(R.layout.activity_main);
 
         progressBar = findViewById(R.id.progressBar);
@@ -68,12 +68,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         webView = findViewById(R.id.webview);
-        
-        // 2. Kunci Background WebView
         webView.setBackgroundColor(Color.parseColor("#0b0f19"));
-
-        // 3. Matikan Layer Type Hardware eksternal yang memicu kedap-kedip canvas pada WebView
-        webView.setLayerType(View.LAYER_TYPE_NONE, null);
 
         WebSettings webSettings = webView.getSettings();
         webSettings.setJavaScriptEnabled(true);
@@ -97,10 +92,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
                 String url = request.getUrl().toString();
-                if (url.contains("unogame17.blogspot.com")) {
+                
+                if (url.contains("unogame17.blogspot.com") || url.startsWith(GAME_URL)) {
                     return false;
                 }
-                return true; 
+                
+                return true;
             }
 
             @Override
@@ -148,7 +145,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     if (isOfflineState && webView != null) {
                         isOfflineState = false;
-                        webView.loadUrl("https://unogame17.blogspot.com");
+                        webView.loadUrl(GAME_URL);
                     }
                 });
             }
@@ -168,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
             showOfflineDialog();
         } else {
             isOfflineState = false;
-            webView.loadUrl("https://gamenumerasi.blogspot.com");
+            webView.loadUrl(GAME_URL);
         }
 
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
@@ -205,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
                 dialog.dismiss();
                 if (webView != null) {
                     isOfflineState = false;
-                    webView.loadUrl("https://gamenumerasi.blogspot.com");
+                    webView.loadUrl(GAME_URL);
                 }
             }
         });
